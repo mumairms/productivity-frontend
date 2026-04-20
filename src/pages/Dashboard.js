@@ -3,6 +3,11 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 
 function Dashboard() {
 
+  // 🔥 PROTECT ROUTE
+  if (!localStorage.getItem("token")) {
+    window.location.href = "/";
+  }
+
   const today = new Date().toLocaleDateString("en-US", { weekday: "short" });
 
   const [weeklyData, setWeeklyData] = useState([
@@ -26,10 +31,9 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 🔥 LIVE BACKEND URL
   const API = "https://productivity-backend-ccxh.onrender.com";
 
-  // 🔥 FETCH TASKS
+  // FETCH TASKS
   useEffect(() => {
     setLoading(true);
 
@@ -51,7 +55,7 @@ function Dashboard() {
       });
   }, []);
 
-  // ⏰ CLOCK
+  // CLOCK
   useEffect(() => {
     const interval = setInterval(() => {
       setTime(new Date());
@@ -60,7 +64,7 @@ function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // ➕ ADD TASK
+  // ADD TASK
   const addTask = () => {
     if (task.trim() === "") return;
 
@@ -70,15 +74,12 @@ function Dashboard() {
         "Content-Type": "application/json",
         Authorization: localStorage.getItem("token")
       },
-      body: JSON.stringify({
-        text: task
-      })
+      body: JSON.stringify({ text: task })
     })
       .then(res => res.json())
       .then(newTask => {
         setTaskList(prev => [...prev, newTask]);
-      })
-      .catch(err => console.log(err));
+      });
 
     setWeeklyData(prev =>
       prev.map(d =>
@@ -89,7 +90,7 @@ function Dashboard() {
     setTask("");
   };
 
-  // ❌ DELETE TASK
+  // DELETE TASK
   const deleteTask = (id) => {
     fetch(`${API}/api/tasks/${id}`, {
       method: "DELETE",
@@ -99,11 +100,10 @@ function Dashboard() {
     })
       .then(() => {
         setTaskList(prev => prev.filter(t => t._id !== id));
-      })
-      .catch(err => console.log(err));
+      });
   };
 
-  // ✅ TOGGLE TASK
+  // TOGGLE TASK
   const toggleTask = (task) => {
     fetch(`${API}/api/tasks/${task._id}`, {
       method: "PUT",
@@ -111,22 +111,17 @@ function Dashboard() {
         "Content-Type": "application/json",
         Authorization: localStorage.getItem("token")
       },
-      body: JSON.stringify({
-        completed: !task.completed
-      })
+      body: JSON.stringify({ completed: !task.completed })
     })
       .then(res => res.json())
       .then(updated => {
         setTaskList(prev =>
           prev.map(t => (t._id === updated._id ? updated : t))
         );
-      })
-      .catch(err => console.log(err));
+      });
   };
 
-  if (loading) {
-    return <h2 className="p-6">Loading dashboard...</h2>;
-  }
+  if (loading) return <h2 className="p-6">Loading...</h2>;
 
   return (
     <div className="flex h-screen">
@@ -134,12 +129,25 @@ function Dashboard() {
       {/* Sidebar */}
       <div className="w-64 bg-blue-600 text-white p-5">
         <h2 className="text-2xl font-bold mb-6">Productivity</h2>
+
         <ul>
           <li className="mb-4">Dashboard</li>
           <li className="mb-4">Tasks</li>
           <li className="mb-4">Goals</li>
           <li className="mb-4">Settings</li>
         </ul>
+
+        {/* 🔥 LOGOUT */}
+        <button
+          onClick={() => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("email");
+            window.location.href = "/";
+          }}
+          className="mt-6 bg-red-500 px-3 py-2 rounded w-full"
+        >
+          Logout
+        </button>
       </div>
 
       {/* Main */}
@@ -147,55 +155,41 @@ function Dashboard() {
 
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
 
+        {/* 🔥 USER EMAIL */}
+        <p className="text-gray-600 mb-2">
+          Welcome, {localStorage.getItem("email")}
+        </p>
+
         <p className="text-gray-500 mb-4">
           {time.toLocaleTimeString()}
         </p>
 
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {error && <p className="text-red-500">{error}</p>}
 
         {/* Cards */}
         <div className="grid grid-cols-3 gap-6">
-          <div className="bg-white p-5 rounded-xl shadow">
+          <div className="bg-white p-5 rounded shadow">
             <h3>Tasks</h3>
-            <p className="text-2xl font-bold">{taskList.length}</p>
+            <p className="text-2xl">{taskList.length}</p>
           </div>
 
-          <div className="bg-white p-5 rounded-xl shadow">
+          <div className="bg-white p-5 rounded shadow">
             <h3>Completed</h3>
-            <p className="text-2xl font-bold">
+            <p className="text-2xl">
               {taskList.filter(t => t.completed).length}
             </p>
           </div>
 
-          <div className="bg-white p-5 rounded-xl shadow">
+          <div className="bg-white p-5 rounded shadow">
             <h3>Pending</h3>
-            <p className="text-2xl font-bold">
+            <p className="text-2xl">
               {taskList.filter(t => !t.completed).length}
             </p>
           </div>
         </div>
 
-        {/* Progress */}
-        <div className="bg-white p-4 rounded-xl shadow mt-6">
-          <h2 className="mb-2 font-semibold">Progress</h2>
-          <div className="w-full bg-gray-200 rounded h-4">
-            <div
-              className="bg-blue-500 h-4 rounded"
-              style={{
-                width: `${
-                  taskList.length === 0
-                    ? 0
-                    : (taskList.filter(t => t.completed).length / taskList.length) * 100
-                }%`
-              }}
-            ></div>
-          </div>
-        </div>
-
         {/* Graph */}
-        <div className="bg-white p-5 rounded-xl shadow mt-6">
-          <h2 className="text-xl mb-4">Weekly Progress</h2>
-
+        <div className="bg-white p-5 rounded shadow mt-6">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={weeklyData}>
               <XAxis dataKey="day" />
@@ -207,79 +201,38 @@ function Dashboard() {
         </div>
 
         {/* Task System */}
-        <div className="bg-white p-5 rounded-xl shadow mt-6">
+        <div className="bg-white p-5 rounded shadow mt-6">
 
-          <h2 className="text-xl mb-4">Task Manager</h2>
+          <input
+            value={task}
+            onChange={(e) => setTask(e.target.value)}
+            placeholder="Add task..."
+            className="p-2 border w-full mb-3"
+          />
 
-          <div className="flex justify-between mb-4">
-            <input
-              placeholder="Search task..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="p-2 border rounded w-1/2"
-            />
+          <button
+            onClick={addTask}
+            className="bg-blue-500 text-white px-4 py-2"
+          >
+            Add Task
+          </button>
 
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="p-2 border rounded"
-            >
-              <option value="all">All</option>
-              <option value="completed">Completed</option>
-              <option value="pending">Pending</option>
-            </select>
-          </div>
+          <ul className="mt-4">
+            {taskList.map(t => (
+              <li key={t._id} className="flex justify-between mb-2">
+                <span
+                  onClick={() => toggleTask(t)}
+                  className={t.completed ? "line-through" : ""}
+                >
+                  {t.text}
+                </span>
 
-          <div className="flex gap-2 mb-4">
-            <input
-              value={task}
-              onChange={(e) => setTask(e.target.value)}
-              placeholder="Enter task..."
-              className="flex-1 p-2 border rounded"
-            />
-
-            <button
-              onClick={addTask}
-              className="bg-blue-500 text-white px-4 rounded hover:bg-blue-600"
-            >
-              Add
-            </button>
-          </div>
-
-          {taskList.length === 0 ? (
-            <p className="text-gray-400">No tasks yet. Start adding 🚀</p>
-          ) : (
-            <ul>
-              {taskList
-                .filter(t => t.text.toLowerCase().includes(search.toLowerCase()))
-                .filter(t =>
-                  filter === "all"
-                    ? true
-                    : filter === "completed"
-                    ? t.completed
-                    : !t.completed
-                )
-                .map((t) => (
-                  <li key={t._id} className="flex justify-between items-center mb-2">
-                    <span
-                      onClick={() => toggleTask(t)}
-                      className={`cursor-pointer ${
-                        t.completed ? "line-through text-gray-400" : ""
-                      }`}
-                    >
-                      {t.text}
-                    </span>
-
-                    <button
-                      onClick={() => deleteTask(t._id)}
-                      className="text-red-500"
-                    >
-                      Delete
-                    </button>
-                  </li>
-                ))}
-            </ul>
-          )}
+                <button onClick={() => deleteTask(t._id)}>
+                  ❌
+                </button>
+              </li>
+            ))}
+          </ul>
 
         </div>
 
