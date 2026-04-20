@@ -23,15 +23,17 @@ function Dashboard() {
 
   const [time, setTime] = useState(new Date());
 
-  // ✅ FIXED (MISSING STATES)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // 🔥 LIVE BACKEND URL
+  const API = "https://productivity-backend-ccxh.onrender.com";
 
   // 🔥 FETCH TASKS
   useEffect(() => {
     setLoading(true);
 
-    fetch("http://localhost:5000/api/tasks", {
+    fetch(`${API}/api/tasks`, {
       method: "GET",
       headers: {
         Authorization: localStorage.getItem("token")
@@ -62,7 +64,7 @@ function Dashboard() {
   const addTask = () => {
     if (task.trim() === "") return;
 
-    fetch("http://localhost:5000/api/tasks", {
+    fetch(`${API}/api/tasks`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -89,7 +91,7 @@ function Dashboard() {
 
   // ❌ DELETE TASK
   const deleteTask = (id) => {
-    fetch(`http://localhost:5000/api/tasks/${id}`, {
+    fetch(`${API}/api/tasks/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: localStorage.getItem("token")
@@ -103,7 +105,7 @@ function Dashboard() {
 
   // ✅ TOGGLE TASK
   const toggleTask = (task) => {
-    fetch(`http://localhost:5000/api/tasks/${task._id}`, {
+    fetch(`${API}/api/tasks/${task._id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -122,7 +124,6 @@ function Dashboard() {
       .catch(err => console.log(err));
   };
 
-  // 🔄 LOADING
   if (loading) {
     return <h2 className="p-6">Loading dashboard...</h2>;
   }
@@ -150,7 +151,6 @@ function Dashboard() {
           {time.toLocaleTimeString()}
         </p>
 
-        {/* ❌ Error */}
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         {/* Cards */}
